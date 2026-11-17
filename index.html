@@ -1,0 +1,1450 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>対馬・韓国 海洋ごみ協働ゲーム</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
+<style>
+/* ============================================================
+   デザイン計画
+   レイアウト: 1画面1ミッション。上に5段階の進行バー、中央に作戦ボード。
+   色の約束: 日本=珊瑚色 / 韓国=藍色 / 外の海から=灰色。どの図でも同じ色を使う。
+   書体: 丸ゴシック（Zen Maru Gothic）。小学生にも読みやすい字形。
+   ============================================================ */
+:root{
+  --bg:#e7f2f5; --surface:#ffffff; --surface-2:#f1f8fa; --ink:#0d2b3b; --muted:#4d6b79; --line:#c5dbe2;
+  --sea-top:#cfeaf0; --sea-bot:#9fd2dd; --sea-soft:#d6eef2; --sea:#0e7c93;
+  --land:#d7e4cc; --land-line:#aebf9f;
+  --btn-bg:#0b4660; --btn-ink:#ffffff;
+  --jp:#cf4220; --jp-soft:#fde8e1; --jp-ink:#8f2a13; --on-jp:#ffffff;
+  --kr:#3558d6; --kr-soft:#e3e9fd; --kr-ink:#1f3a9a; --on-kr:#ffffff;
+  --ext:#6f838c; --good:#1c8a5b; --trash:#6b5338;
+  --font:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#071f2b; --surface:#0e3043; --surface-2:#123b51; --ink:#e3f1f5; --muted:#97b7c4; --line:#25506a;
+    --sea-top:#0d3a4f; --sea-bot:#0a2a3c; --sea-soft:#124759; --sea:#4cc6da;
+    --land:#2b4a3d; --land-line:#3d6552;
+    --btn-bg:#4cc6da; --btn-ink:#04222c;
+    --jp:#ff8466; --jp-soft:#4a2318; --jp-ink:#ffb9a6; --on-jp:#3a0f04;
+    --kr:#8aa6ff; --kr-soft:#1d2a5c; --kr-ink:#b9c8ff; --on-kr:#0b1a55;
+    --ext:#8aa0aa; --good:#5fd49c; --trash:#c9a77a;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#071f2b; --surface:#0e3043; --surface-2:#123b51; --ink:#e3f1f5; --muted:#97b7c4; --line:#25506a;
+  --sea-top:#0d3a4f; --sea-bot:#0a2a3c; --sea-soft:#124759; --sea:#4cc6da;
+  --land:#2b4a3d; --land-line:#3d6552;
+  --btn-bg:#4cc6da; --btn-ink:#04222c;
+  --jp:#ff8466; --jp-soft:#4a2318; --jp-ink:#ffb9a6; --on-jp:#3a0f04;
+  --kr:#8aa6ff; --kr-soft:#1d2a5c; --kr-ink:#b9c8ff; --on-kr:#0b1a55;
+  --ext:#8aa0aa; --good:#5fd49c; --trash:#c9a77a;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.7;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+h1,h2,h3,h4{margin:0;line-height:1.35;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
+.app{max-width:1120px;margin:0 auto;padding-block:18px 56px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:.95rem;color:var(--muted)}
+.brand svg{width:28px;height:28px;flex:none}
+
+/* ---- チームの色 ---- */
+.jp{--c:var(--jp);--c-soft:var(--jp-soft);--c-ink:var(--jp-ink);--on:var(--on-jp)}
+.kr{--c:var(--kr);--c-soft:var(--kr-soft);--c-ink:var(--kr-ink);--on:var(--on-kr)}
+.both{--c:var(--sea);--c-soft:var(--sea-soft);--c-ink:var(--ink);--on:var(--btn-ink)}
+
+/* ---- 進行バー ---- */
+.stepbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;list-style:none;margin:14px 0 18px;padding:0}
+.stepbar .bar{display:block;height:8px;border-radius:99px;background:var(--line)}
+.stepbar .lab{display:block;margin-top:4px;font-size:.72rem;line-height:1.3;font-weight:700;color:var(--muted)}
+.stepbar li.done .bar{background:var(--sea)}
+.stepbar li.cur .bar{background:var(--btn-bg)}
+.stepbar li.cur .lab{color:var(--ink)}
+
+/* ---- 共通部品 ---- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.kicker{font-size:.82rem;font-weight:900;letter-spacing:.08em;color:var(--sea)}
+.btn{min-height:48px;padding:10px 24px;border-radius:999px;border:0;background:var(--btn-bg);color:var(--btn-ink);font-weight:900;cursor:pointer}
+.btn.big{min-height:56px;font-size:1.1rem;padding-inline:32px}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.team{background:var(--surface);color:var(--c-ink);border:2px solid var(--c)}
+.btn.team[aria-pressed="true"]{background:var(--c);color:var(--on)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.note{font-size:.86rem;color:var(--muted)}
+.badge-new{display:inline-block;margin-left:8px;padding:0 8px;border-radius:99px;background:var(--c,var(--sea));color:var(--on,var(--btn-ink));font-size:.7rem;font-weight:900;letter-spacing:.06em;vertical-align:middle}
+
+/* ---- スタート画面 ---- */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:24px;align-items:center;margin-top:12px}
+.hero h1{font-size:clamp(1.7rem,4.4vw,2.6rem);font-weight:900;margin:6px 0 10px}
+.hero .lead{font-size:1.08rem;margin-bottom:16px}
+.goals{list-style:none;margin:0 0 22px;padding:0;display:grid;gap:8px}
+.goals li{display:flex;gap:10px;align-items:flex-start;font-weight:700}
+.goals li b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--sea);color:var(--btn-ink);display:grid;place-items:center;font-size:.85rem}
+.how{margin-top:26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px}
+.how h3{font-size:1rem;margin-bottom:4px}
+.how p{font-size:.92rem;color:var(--muted)}
+.wavebar{height:34px;margin-top:20px;overflow:hidden;border-radius:var(--r);background:var(--sea-soft)}
+.wavebar svg{display:block;width:200%;height:100%;animation:drift 14s linear infinite}
+@keyframes drift{to{transform:translateX(-50%)}}
+
+/* ---- 地図 ---- */
+.map{width:100%;height:auto;display:block;border-radius:var(--r);border:1px solid var(--line)}
+.map .land{fill:var(--land);stroke:var(--land-line);stroke-width:2}
+.map .flow{fill:none;stroke:var(--ink);stroke-opacity:.14;stroke-width:14;stroke-linecap:round;stroke-dasharray:2 26}
+.map .mt{font:700 15px var(--font);fill:var(--ink)}
+.map .mt.big{font-size:22px;font-weight:900}
+.map .mt.sm{font-size:13px;fill:var(--muted)}
+.map .pile{fill:var(--trash);stroke:var(--surface);stroke-width:2;transition:r .6s ease}
+.map .src{stroke:var(--surface);stroke-width:3}
+
+/* ---- ステップ紹介 ---- */
+.intro{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:start}
+.intro h2{font-size:clamp(1.5rem,3.6vw,2.1rem);font-weight:900;margin:4px 0 12px}
+.intro .story{margin-bottom:12px}
+.mission{background:var(--sea-soft);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.intro .budget{font-weight:900;margin-bottom:16px}
+.intro-new h3{font-size:1rem;margin-bottom:10px}
+.newcard{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.newcard:first-of-type{border-top:0}
+.newcard .ico{font-size:2rem;line-height:1.2}
+.newcard p{font-size:.88rem;color:var(--muted)}
+
+/* ---- ポイントバー（常に表示） ---- */
+.pointbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px;background:var(--bg);padding:8px 0 10px}
+.pb{background:var(--surface);border:2px solid var(--c);border-radius:14px;padding:8px 14px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:2px 12px}
+.pb .who{font-weight:900;color:var(--c-ink);font-size:.95rem}
+.pb .num{grid-row:span 2;font-size:2rem;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:var(--c-ink)}
+.pb .num small{font-size:.8rem;margin-left:2px}
+.pips{display:flex;flex-wrap:wrap;gap:3px}
+.pip{width:12px;height:12px;border-radius:50%;background:var(--c)}
+.pip.off{background:transparent;box-shadow:inset 0 0 0 2px var(--line)}
+
+/* ---- 見込み ---- */
+.forecast{display:flex;flex-wrap:wrap;gap:8px 18px;margin:4px 0 14px;font-size:.9rem;color:var(--muted)}
+.forecast b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* ---- 作戦ボード ---- */
+.boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:16px}
+.team-panel{border-top:8px solid var(--c)}
+.team-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.team-head h3{font-size:1.25rem;font-weight:900;color:var(--c-ink)}
+.team-head .sub{font-size:.85rem;color:var(--muted)}
+.sec{margin:14px 0 8px;font-size:.88rem;font-weight:900;color:var(--muted)}
+.card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;margin-bottom:8px;border:2px solid var(--line);border-radius:14px;background:var(--surface)}
+.card.on{border-color:var(--c);background:var(--c-soft)}
+.card .ico{font-size:1.9rem;line-height:1}
+.card h4{font-size:1rem;font-weight:900}
+.card p{font-size:.84rem;color:var(--muted);line-height:1.5}
+.card .eff{font-size:.84rem;font-weight:700;color:var(--c-ink)}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper output{min-width:2.6em;text-align:center;font-weight:900;font-size:1.2rem;font-variant-numeric:tabular-nums}
+.stepper output small{font-size:.7rem}
+.st{width:44px;height:44px;border-radius:50%;border:2px solid var(--c);background:var(--surface);color:var(--c-ink);font-size:1.3rem;font-weight:900;cursor:pointer;line-height:1}
+.st:hover:not(:disabled){background:var(--c);color:var(--on)}
+.st:disabled{opacity:.35;cursor:not-allowed}
+.share{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border:2px dashed var(--line);border-radius:14px;background:var(--surface);cursor:pointer;min-height:56px}
+.share small{display:block;font-size:.8rem;color:var(--muted);line-height:1.4}
+.share .ico{font-size:1.6rem}
+.share .cost{font-weight:900;font-size:.9rem}
+.share[aria-pressed="true"]{border-style:solid;border-color:var(--c);background:var(--c-soft)}
+.share:disabled{opacity:.4;cursor:not-allowed}
+
+/* ---- 協力カード ---- */
+.coop{margin-top:16px;border:3px solid var(--sea)}
+.coop h3{font-size:1.2rem;font-weight:900;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.coop .cost{padding:0 10px;border-radius:99px;background:var(--sea-soft);font-size:.9rem}
+.coop .desc{margin:6px 0 12px;color:var(--muted);font-size:.92rem}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid var(--line);background:var(--surface);font-weight:700;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--btn-bg);color:var(--btn-ink);border-color:var(--btn-bg)}
+.chip.jp[aria-pressed="true"]{background:var(--jp);border-color:var(--jp);color:var(--on-jp)}
+.chip.kr[aria-pressed="true"]{background:var(--kr);border-color:var(--kr);color:var(--on-kr)}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+.pay{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-weight:900}
+.pay span.jp{color:var(--jp-ink)} .pay span.kr{color:var(--kr-ink)}
+.pay .st{--c:var(--sea);--c-ink:var(--ink);--on:var(--btn-ink)}
+.coop-body[hidden]{display:none}
+
+/* ---- 準備OK ---- */
+.readyrow{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:20px}
+.readyrow .go{margin-left:auto}
+
+/* ---- シミュレーション ---- */
+.simhead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.seasons{display:flex;gap:8px}
+.seasons span{min-width:56px;text-align:center;padding:4px 12px;border-radius:99px;background:var(--line);font-weight:900;color:var(--muted)}
+.seasons span.now{background:var(--btn-bg);color:var(--btn-ink)}
+.hud{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px;margin-top:12px}
+.hud .panel{padding:12px 14px;font-size:.92rem}
+.hud b{font-size:1.4rem;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.84rem;color:var(--muted);margin:10px 0 0}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.dot.jp{background:var(--jp)} .dot.kr{background:var(--kr)} .dot.ext{background:var(--ext)} .dot.ok{background:var(--good)}
+
+/* ---- 結果 ---- */
+.res h2{font-size:clamp(1.5rem,3.4vw,2rem);font-weight:900;margin:4px 0 14px}
+.insight{background:var(--sea-soft);border-radius:var(--r);padding:16px 18px;font-weight:700;font-size:1.05rem;display:grid;gap:8px}
+.insight b{font-size:1.2em;font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.tile .v{font-size:1.7rem;font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums}
+.tile .v small{font-size:.8rem;margin-left:2px}
+.tile .l{font-size:.84rem;color:var(--muted);font-weight:700}
+.tile.good .v{color:var(--good)}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;margin-bottom:16px}
+.chart h3,.origin h3,.cmp h3{font-size:1rem;margin-bottom:8px}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{font:700 11px var(--font);fill:var(--muted)}
+.chart text.val{font-size:12px;fill:var(--ink)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .ln{fill:none;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.chart .ln.base{stroke:var(--ext);stroke-width:2.5;stroke-dasharray:6 5}
+.chart .ln.jp{stroke:var(--jp)} .chart .ln.kr{stroke:var(--kr)}
+.chart .ar.jp{fill:var(--jp);fill-opacity:.14} .chart .ar.kr{fill:var(--kr);fill-opacity:.14}
+.chart .pt.jp{fill:var(--jp)} .chart .pt.kr{fill:var(--kr)}
+.stack{display:flex;height:34px;border-radius:10px;overflow:hidden;background:var(--line);margin:6px 0 10px}
+.stack i{display:grid;place-items:center;min-width:0;font-style:normal;font-size:.78rem;font-weight:900;color:#fff;overflow:hidden;white-space:nowrap}
+.stack i.jp{background:var(--jp);color:var(--on-jp)} .stack i.kr{background:var(--kr);color:var(--on-kr)} .stack i.ext{background:var(--ext);color:#fff}
+.origin .cap{font-size:.88rem;font-weight:700;margin-top:6px}
+.cmp-row{display:grid;grid-template-columns:5.5em minmax(0,1fr) auto;gap:10px;align-items:center;margin:8px 0}
+.cmp-lab{font-weight:900;font-size:.9rem}
+.cmp-bar{display:flex;height:26px;border-radius:8px;background:var(--line);overflow:hidden}
+.cmp-bar i{display:block;height:100%}
+.cmp-bar i.jp{background:var(--jp)} .cmp-bar i.kr{background:var(--kr)}
+.cmp-val{font-size:.86rem;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{padding:4px 12px;border-radius:99px;border:2px solid var(--c);background:var(--c-soft);font-size:.86rem;font-weight:700}
+.tag.coop{border-style:dashed}
+.warn{background:var(--jp-soft);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:.9rem}
+.next{margin-top:22px}
+.foot{margin-top:28px;font-size:.8rem;color:var(--muted)}
+.sp{height:16px}
+
+/* ---- ふりかえり ---- */
+.goal{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.goal:first-of-type{border-top:0}
+.goal .no{width:32px;height:32px;border-radius:50%;background:var(--sea);color:var(--btn-ink);display:grid;place-items:center;font-weight:900}
+.goal h4{font-size:1.02rem;font-weight:900}
+.goal p{font-size:.92rem;color:var(--muted)}
+.goal p b{color:var(--ink)}
+.q{margin-top:14px}
+.q label{display:block;font-weight:900;margin-bottom:6px}
+.q textarea{width:100%;min-height:88px;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
+
+@media (max-width:760px){
+  .hero,.intro{grid-template-columns:minmax(0,1fr)}
+  .readyrow .go{margin-left:0;width:100%}
+  .card{grid-template-columns:auto minmax(0,1fr)}
+  .card .stepper{grid-column:1 / -1;justify-content:flex-end}
+  .cmp-row{grid-template-columns:4.6em minmax(0,1fr)}
+  .cmp-val{grid-column:2}
+}
+@media (prefers-reduced-motion: reduce){
+  .wavebar svg{animation:none}
+  .map .pile{transition:none}
+}
+
+/* ---- 席の表示・入り口 ---- */
+.seatbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:10px 0 0;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-size:.9rem}
+.seatbar .seat{padding:2px 12px;border-radius:99px;background:var(--c-soft);color:var(--c-ink);border:2px solid var(--c)}
+.seatbar .grow{flex:1 1 0}
+.pstat{display:inline-flex;align-items:center;font-weight:700;color:var(--muted);font-size:.88rem}
+.pstat.big{font-size:.95rem}
+.btn.sm{min-height:40px;padding:6px 16px;font-size:.88rem}
+.join h2{font-size:1.25rem;font-weight:900;margin-bottom:6px}
+.join label{display:block;font-weight:900;margin:10px 0 6px}
+.join input[type="text"]{flex:1 1 140px;min-width:0;min-height:48px;padding:8px 14px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:1.2rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase}
+.teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.teambtn{display:grid;justify-items:center;gap:0;min-height:96px;padding:10px;border-radius:16px;border:3px solid var(--c);background:var(--c-soft);color:var(--c-ink);cursor:pointer;line-height:1.35}
+.teambtn.jp{--c:var(--jp);--c-soft:var(--jp-soft);--c-ink:var(--jp-ink)}
+.teambtn.kr{--c:var(--kr);--c-soft:var(--kr-soft);--c-ink:var(--kr-ink)}
+.teambtn .fl{font-size:1.8rem}
+.teambtn b{font-size:1.05rem}
+.teambtn small{color:var(--muted);font-weight:700}
+.teambtn:hover:not(:disabled){background:var(--c);color:var(--on-jp)}
+.teambtn.kr:hover:not(:disabled){color:var(--on-kr)}
+.teambtn:disabled{opacity:.45;cursor:not-allowed}
+.hr{border:0;border-top:1px solid var(--line);margin:16px 0 12px}
+.resume{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--sea-soft)}
+.lock{margin:6px 0 4px;font-size:.84rem;font-weight:700;color:var(--muted)}
+.lock.shared{color:var(--sea);margin-bottom:10px}
+.boards.one{grid-template-columns:minmax(0,1fr);max-width:640px}
+.pointbar.one{grid-template-columns:minmax(0,1fr);max-width:420px}
+.readyrow .pstat{margin-left:auto}
+.btn.team.both{border-color:var(--sea)}
+.btn.big.team{padding-inline:28px}
+@media (max-width:760px){ .readyrow .pstat{margin-left:0} .teams{grid-template-columns:minmax(0,1fr)} }
+</style>
+
+<div class="app">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--sea)"/><path d="M3 18c3-3 5-3 8 0s5 3 8 0 5-3 8 0v9H3z" fill="var(--sea-soft)"/><path d="M3 13c3-3 5-3 8 0s5 3 8 0 5-3 8 0" fill="none" stroke="var(--sea-soft)" stroke-width="2.2" stroke-linecap="round"/></svg>
+    <span>対馬・韓国 海洋ごみ協働ゲーム</span>
+  </div>
+  <div id="stepbar" aria-label="席と進行状況"></div>
+  <main id="screen"></main>
+  <p class="foot" id="foot"></p>
+</div>
+
+<!-- ================================================================
+     シミュレーションモジュール（ゲーム画面から独立）
+     ----------------------------------------------------------------
+     ここだけを差し替えれば、画面側は触らずに本物の漂流シミュレーション
+     サイトへ接続できます。
+
+     ◆ 入力 input（画面 → シミュレーション）
+       {
+         version: 1,
+         step: 1〜4,
+         seasons: ['春','夏','秋','冬'],
+         actions: [ { loc, method, points, mode, owner, paid? } ],
+            loc    : 'jp_coast'|'kr_coast'|'jp_source'|'kr_source'  （対策する場所）
+            method : 'pickup'|'litter'|'bins'|'river'|'aware'       （対策の種類）
+            points : 使ったポイント
+            mode   : 'solo'(単独)|'coop'(協力カード)|'unified'(STEP4の統合)
+            owner  : 'jp'|'kr'|'both'
+         shares: [ { from: 'jp'|'kr'|'both', kind: 'source'|'data'|'sim' } ]  （情報共有）
+       }
+     ◆ 出力 result（シミュレーション → 画面）  run() の返り値を参照
+       seasons[] / total / baseline / sourceReduction / improvement /
+       cut / bonusEffect / crossEffect / engine
+
+     ◆ 外部サイトへ接続する手順
+       1) 下の SIM_URL にURLを入れる（または MarineSim.setSimUrl('https://…')）
+       2) adaptResponse() で、相手サイトの返却値を上の result 形式へ変換する
+       3) 通信に失敗した場合は自動でダミー計算に戻ります
+     ※ このページを公開URL（アーティファクト）で動かす場合、外部通信は
+        ブラウザの制限でブロックされます。index.html を自分のサーバーに置くと通信できます。
+     ================================================================ -->
+<script id="sim-module">
+const MarineSim = (function () {
+  'use strict';
+
+  /* ---------- 1. 調整用パラメータ（数字はすべてダミー） ---------- */
+  const CONFIG = {
+    BUDGET_PER_STEP: 10,          // 各チームが各ステップで使えるポイント
+    COOP_COST: 6,                 // 協力カードのコスト（2チーム合計）
+    SHARE_COST: 1,                // 情報共有カード1枚のコスト
+    SEASONS: ['春', '夏', '秋', '冬'],
+    SEASON_FACTOR: [0.8, 1.3, 0.9, 1.0],   // 季節ごとの量の変化（平均1.0）
+    EMIT: { jp: 400, kr: 500 },            // 1季節に海へ出るごみの量（発生源）
+    EXTERNAL: { jp: 200, kr: 150 },        // ほかの国・地域から流れてくる量
+    // TRANSPORT[発生源の国][着く海岸] = 海へ出たごみのうち、その海岸に着く割合
+    TRANSPORT: { jp: { jp: 0.40, kr: 0.10 }, kr: { jp: 0.25, kr: 0.40 } },
+    COLLECT_PER_PT: 8,            // 拾うカード 1pt あたり 1季節に回収できる個数 ← 後から調整
+    CUT_CAP: 0.8,                 // 発生源対策の削減率の上限
+    INFO_PER_CARD: 0.15,          // 情報共有カード1枚で、受け取った側の対策効果が増える割合
+    INFO_MAX_CARDS: 3,
+    INFO_MUTUAL: 0.10,            // おたがいに共有したときの追加ボーナス
+    COOP_BONUS: 0.5,              // 協力カードの効果 +50%
+    UNIFIED_BONUS: 0.3            // STEP4（ひとつの海）の効果 +30%
+  };
+
+  /* ---------- 2. カードの定義 ---------- */
+  const METHODS = {
+    pickup: { label: '拾うカード',   icon: '🧤', kind: 'coast',  max: 10, desc: '浜に流れ着いたごみを拾います' },
+    litter: { label: 'ポイ捨て防止', icon: '🚯', kind: 'source', max: 4, rate: 0.06, desc: '看板や見回りで、ポイ捨てを減らします' },
+    bins:   { label: 'ごみ箱設置',   icon: '🗑️', kind: 'source', max: 4, rate: 0.05, desc: 'まちや海岸にごみ箱を増やします' },
+    river:  { label: '河川対策',     icon: '🏞️', kind: 'source', max: 4, rate: 0.08, desc: '川にネットをはり、海に出る前に止めます' },
+    aware:  { label: '啓発活動',     icon: '📣', kind: 'source', max: 4, rate: 0.04, desc: '学校やポスターで、ごみを出さない人を増やします' }
+  };
+  const LOCS = {
+    jp_coast:  { team: 'jp', kind: 'coast',  label: '対馬の浜' },
+    kr_coast:  { team: 'kr', kind: 'coast',  label: '韓国の海岸' },
+    jp_source: { team: 'jp', kind: 'source', label: '日本側の発生源' },
+    kr_source: { team: 'kr', kind: 'source', label: '韓国側の発生源' }
+  };
+  const SHARES = {
+    source: { label: '発生源情報',         icon: '📍', desc: 'ごみがどこから出ているか' },
+    data:   { label: 'ごみ量データ',       icon: '📊', desc: '浜のごみの種類と量' },
+    sim:    { label: 'シミュレーション結果', icon: '🧭', desc: 'ごみがどう流れるか' }
+  };
+
+  /* ---------- 3. 効果の計算 ---------- */
+  // 情報共有: 相手から受け取ったカードの枚数で、その国の対策効果の倍率が決まる
+  function infoMults(shares) {
+    const recv = { jp: 0, kr: 0 }, sent = { jp: 0, kr: 0 };
+    (shares || []).forEach(function (s) {
+      if (s.from === 'jp' || s.from === 'both') { sent.jp++; recv.kr++; }
+      if (s.from === 'kr' || s.from === 'both') { sent.kr++; recv.jp++; }
+    });
+    const mutual = sent.jp > 0 && sent.kr > 0;
+    function f(t) {
+      return 1 + CONFIG.INFO_PER_CARD * Math.min(CONFIG.INFO_MAX_CARDS, recv[t]) + (mutual && recv[t] > 0 ? CONFIG.INFO_MUTUAL : 0);
+    }
+    return { jp: f('jp'), kr: f('kr') };
+  }
+
+  // 1つの対策にかかる倍率（情報共有 × 協力ボーナス）
+  function actionMult(a, info, opts) {
+    let m = a.owner === 'both' ? (info.jp + info.kr) / 2 : info[a.owner];
+    if (a.mode === 'coop' && !opts.noCoop) m *= 1 + CONFIG.COOP_BONUS;
+    if (a.mode === 'unified' && !opts.noCoop) m *= 1 + CONFIG.UNIFIED_BONUS;
+    return m;
+  }
+
+  // 作戦を集計: 発生源の削減率(cut)と、1季節あたりの回収力(collect)
+  function plan(input, opts) {
+    opts = opts || {};
+    const info = (opts.noInfo || opts.noBonus) ? { jp: 1, kr: 1 } : infoMults(input.shares);
+    const o = { noCoop: opts.noCoop || opts.noBonus };
+    const cut = { jp: 0, kr: 0 }, collect = { jp: 0, kr: 0 };
+    (input.actions || []).forEach(function (a) {
+      const def = METHODS[a.method], loc = LOCS[a.loc];
+      if (!def || !loc || def.kind !== loc.kind) return;
+      const eff = a.points * actionMult(a, info, o);
+      if (loc.kind === 'coast') collect[loc.team] += eff * CONFIG.COLLECT_PER_PT;
+      else cut[loc.team] += eff * def.rate;
+    });
+    cut.jp = Math.min(cut.jp, CONFIG.CUT_CAP);
+    cut.kr = Math.min(cut.kr, CONFIG.CUT_CAP);
+    return { cut: cut, collect: collect, info: info };
+  }
+
+  /* ---------- 4. 1年（春夏秋冬）のシミュレーション ---------- */
+  function simulate(input, opts) {
+    const p = plan(input, opts);
+    const stock = { jp: 0, kr: 0 };
+    const seasons = CONFIG.SEASONS.map(function (label, i) {
+      const f = CONFIG.SEASON_FACTOR[i];
+      const row = { label: label };
+      ['jp', 'kr'].forEach(function (coast) {
+        const from = {
+          jp: CONFIG.EMIT.jp * f * (1 - p.cut.jp) * CONFIG.TRANSPORT.jp[coast],
+          kr: CONFIG.EMIT.kr * f * (1 - p.cut.kr) * CONFIG.TRANSPORT.kr[coast],
+          ext: CONFIG.EXTERNAL[coast] * f
+        };
+        const inflow = from.jp + from.kr + from.ext;
+        const avail = stock[coast] + inflow;
+        const got = Math.min(avail, p.collect[coast]);   // 拾える数には上限がある
+        stock[coast] = avail - got;
+        row[coast] = { inflow: inflow, collected: got, stock: stock[coast], from: from };
+      });
+      return row;
+    });
+    return { seasons: seasons, cut: p.cut, collect: p.collect, info: p.info };
+  }
+
+  function totals(sim) {
+    const t = { arrived: { jp: 0, kr: 0 }, collected: { jp: 0, kr: 0 }, remaining: { jp: 0, kr: 0 },
+                byOrigin: { jp: { jp: 0, kr: 0, ext: 0 }, kr: { jp: 0, kr: 0, ext: 0 } } };
+    sim.seasons.forEach(function (s) {
+      ['jp', 'kr'].forEach(function (c) {
+        t.arrived[c] += s[c].inflow;
+        t.collected[c] += s[c].collected;
+        ['jp', 'kr', 'ext'].forEach(function (o) { t.byOrigin[c][o] += s[c].from[o]; });
+      });
+    });
+    const last = sim.seasons[sim.seasons.length - 1];
+    t.remaining.jp = last.jp.stock;
+    t.remaining.kr = last.kr.stock;
+    return t;
+  }
+  function withAll(o) { o.all = o.jp + o.kr; return o; }
+  function deepRound(v) {
+    if (typeof v === 'number') return Math.round(v * 1000) / 1000;
+    if (Array.isArray(v)) return v.map(deepRound);
+    if (v && typeof v === 'object') { const r = {}; Object.keys(v).forEach(function (k) { r[k] = deepRound(v[k]); }); return r; }
+    return v;
+  }
+
+  /* ---------- 5. ダミーシミュレーションの実行 ---------- */
+  function run(input) {
+    const a = simulate(input);
+    const base = simulate({ actions: [], shares: [] });
+    const noInfo = simulate(input, { noInfo: true });
+    const noCoop = simulate(input, { noCoop: true });
+    const noBonus = simulate(input, { noBonus: true });
+    const ta = totals(a), tb = totals(base);
+    const rem = function (t) { return t.remaining.jp + t.remaining.kr; };
+    const remA = rem(ta), remB = rem(tb);
+    const result = {
+      engine: 'dummy',
+      step: input.step,
+      seasons: a.seasons,
+      cut: a.cut,
+      collectPerSeason: a.collect,
+      total: {
+        arrived: withAll(ta.arrived), collected: withAll(ta.collected), remaining: withAll(ta.remaining),
+        byOrigin: ta.byOrigin
+      },
+      baseline: {
+        arrived: withAll(tb.arrived), remaining: withAll(tb.remaining), byOrigin: tb.byOrigin,
+        stockBySeason: {
+          jp: base.seasons.map(function (s) { return s.jp.stock; }),
+          kr: base.seasons.map(function (s) { return s.kr.stock; })
+        }
+      },
+      // 発生源対策などで、何もしない場合より流れ着かなくなった量
+      sourceReduction: withAll({ jp: tb.arrived.jp - ta.arrived.jp, kr: tb.arrived.kr - ta.arrived.kr }),
+      // ごみの残り量が、何もしない場合より何割減ったか
+      improvement: remB > 0 ? 1 - remA / remB : 0,
+      // 情報共有・協力による追加効果（残りごみがさらに減った量）
+      bonusEffect: {
+        info: Math.max(0, rem(totals(noInfo)) - remA),
+        coop: Math.max(0, rem(totals(noCoop)) - remA),
+        all: Math.max(0, rem(totals(noBonus)) - remA)
+      },
+      // 相手側の対策が、自分たちの海岸に与えた影響
+      crossEffect: {
+        toJP: tb.byOrigin.jp.kr - ta.byOrigin.jp.kr,   // 韓国の対策で、対馬に届くごみが減った量
+        toKR: tb.byOrigin.kr.jp - ta.byOrigin.kr.jp    // 日本の対策で、韓国の海岸に届くごみが減った量
+      }
+    };
+    return deepRound(result);
+  }
+
+  // 画面の「見込み」表示用（実行前にだいたいの効果を知らせる）
+  function preview(input) { const p = plan(input); return { cut: p.cut, collect: p.collect, info: p.info }; }
+
+  /* ---------- 6. 外部シミュレーションサイトとの接続口 ---------- */
+  let SIM_URL = '';   // ← 後から提供されるURLをここへ（例: 'https://example.org/api/simulate'）
+
+  // 相手サイトの返却値を、上の result 形式へ変換する場所（形式が決まったら書き換える）
+  function adaptResponse(raw) { return raw; }
+
+  async function callExternal(input) {
+    const res = await fetch(SIM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+    // iframe + postMessage で連携する場合は、ここで iframe に input を送り、
+    // message イベントで result を受け取って resolve する形にします。
+  }
+
+  // 画面から呼ぶ入口。URL未設定ならダミー、設定済みなら外部、失敗したらダミーに戻す
+  async function execute(input) {
+    if (SIM_URL) {
+      try {
+        const res = adaptResponse(await callExternal(input));
+        res.engine = res.engine || 'external';
+        return res;
+      } catch (err) {
+        console.warn('[MarineSim] 外部シミュレーションに接続できませんでした。ダミー計算に切り替えます。', err);
+        const res = run(input);
+        res.fallback = true;
+        return res;
+      }
+    }
+    return run(input);
+  }
+
+  return {
+    CONFIG: CONFIG, METHODS: METHODS, LOCS: LOCS, SHARES: SHARES,
+    run: run, execute: execute, preview: preview,
+    setSimUrl: function (u) { SIM_URL = u || ''; },
+    getSimUrl: function () { return SIM_URL; }
+  };
+})();
+</script>
+
+<!-- ================================================================
+     ゲーム画面（UI）
+     状態 state を書き換えて render() で画面を作り直す、単純な構造です。
+     phase: start → intro → plan → sim → result（STEP1〜3）／ final → reflect
+     ================================================================ -->
+<script id="game-ui">
+(function () {
+  'use strict';
+  const S = MarineSim, C = S.CONFIG, M = S.METHODS, L = S.LOCS, SH = S.SHARES;
+  const $ = function (s) { return document.querySelector(s); };
+  const esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  const fmt = function (n) { return Math.round(n).toLocaleString('ja-JP'); };
+  const pct = function (x) { return Math.round(x * 100); };
+  const other = function (t) { return t === 'jp' ? 'kr' : 'jp'; };
+  const clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+  const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+
+  const TEAM = {
+    jp: { name: '日本チーム', sub: '対馬', flag: '🇯🇵', coast: '対馬の浜' },
+    kr: { name: '韓国チーム', sub: '韓国', flag: '🇰🇷', coast: '韓国の海岸' }
+  };
+  const SHORT = ['拾う', 'ほかの方法', '協力', 'ひとつの海', '結果'];
+  const SOURCE_METHODS = ['litter', 'bins', 'river', 'aware'];
+
+  /* ================================================================
+     通信のしくみ（2台の端末でゲームを共有する部分）
+     ----------------------------------------------------------------
+     共有データベース（db）に、1つの「部屋」＝1ゲームぶんのデータを置きます。
+       games/<部屋コード>/seats/jp   日本チームだけが書く（作戦・進み具合・メモ）
+       games/<部屋コード>/seats/kr   韓国チームだけが書く
+       games/<部屋コード>/board/s3   STEP3の協力ボード（両チームが書く）
+       games/<部屋コード>/board/s4   STEP4のひとつの海ボード（両チームが書く）
+       games/<部屋コード>/claims/<team> どの端末がそのチームの席に座っているか
+     「いま何をする場面か」は、この4つのデータから毎回計算して決めます。
+     そのため、2台のあいだで「同時に書いて上書きし合う」ことがほとんど起きません。
+     ※相手チームの画面を見せない仕組みは、画面の表示だけで行っています。
+       データそのものは、ページを開ける人なら技術的には読めてしまいます。
+     ================================================================ */
+  const net = { db: undefined };           // undefined=確認中 / null=使えない / オブジェクト=使える
+  window.claude && window.claude.use && window.claude.use('db').then(function (d) { net.db = d || null; render(); }, function () { net.db = null; render(); });
+  if (!(window.claude && window.claude.use)) net.db = null;
+
+  let G = null;                            // 参加中のゲーム { mode:'db'|'local', code, team, cid }
+  const docs = { jp: null, kr: null };     // 各チームの席のデータ
+  const boards = { 3: defaultBoard(3), 4: defaultBoard(4) };   // 共通ボード
+  let subs = [];                           // 購読の解除関数
+  let netError = '';
+  const writers = {};                      // 書きこみキュー
+
+  const lobby = { code: '', busy: false, msg: '', taken: '' };
+
+  function newRev() { return Math.random().toString(36).slice(2, 8); }
+  function defaultBoard(step) {
+    return step === 3 ? { rev: '0', coop: { on: false, loc: 'kr_source', method: 'river', jpPay: 3 } }
+                      : { rev: '0', alloc: {}, shares: {} };
+  }
+  function freshPlan() { return { alloc: {}, shares: {}, ready: false, readyRev: '' }; }
+  function freshSeat() { return { step: 1, phase: 'intro', plans: {}, notes: {} }; }
+  function normSeat(d) {
+    const s = freshSeat();
+    if (d && typeof d === 'object') {
+      s.step = Math.min(4, Math.max(1, Number(d.step) || 1));
+      s.phase = ['intro', 'plan', 'result', 'final', 'reflect'].indexOf(d.phase) >= 0 ? d.phase : 'intro';
+      s.plans = d.plans && typeof d.plans === 'object' ? d.plans : {};
+      s.notes = d.notes && typeof d.notes === 'object' ? d.notes : {};
+    }
+    return s;
+  }
+  function normBoard(step, d) {
+    const b = defaultBoard(step);
+    if (d && typeof d === 'object') {
+      b.rev = String(d.rev || '0');
+      if (step === 3 && d.coop) b.coop = Object.assign(b.coop, d.coop);
+      if (step === 4) { b.alloc = d.alloc || {}; b.shares = d.shares || {}; }
+    }
+    return b;
+  }
+
+  /* ---------- 書きこみ（まとめて・順番に） ---------- */
+  function scheduleWrite(key, ref, getter) {
+    if (!G || G.mode !== 'db') return;
+    const w = writers[key] || (writers[key] = { t: 0, busy: false, dirty: false });
+    w.dirty = true;
+    clearTimeout(w.t);
+    w.t = setTimeout(function run() {
+      if (w.busy) { w.t = setTimeout(run, 80); return; }
+      w.busy = true; w.dirty = false;
+      const data = clone(getter());
+      ref().set(data).then(function () { netError = ''; }, function (e) {
+        netError = (e && e.code === 'invalid_argument')
+          ? '書きこめませんでした。このページの「編集できる権限（Contributor）」が必要です。ページの持ち主に権限をつけてもらってください。'
+          : '保存できませんでした。通信を確かめてください。';
+        render();
+      }).then(function () { w.busy = false; if (w.dirty) { w.t = setTimeout(run, 50); } });
+    }, 250);
+  }
+  function isPending(key) { const w = writers[key]; return !!(w && (w.busy || w.dirty)); }
+  function saveSeat() { const t = G.team; scheduleWrite('seat', function () { return net.db.doc('games/' + G.code + '/seats/' + t); }, function () { return docs[t]; }); }
+  function saveBoard(step) { scheduleWrite('b' + step, function () { return net.db.doc('games/' + G.code + '/board/s' + step); }, function () { return boards[step]; }); }
+
+  /* ---------- 参加する（席に座る） ---------- */
+  function cidOf() {
+    try {
+      let c = localStorage.getItem('marine-cid');
+      if (!c) { c = 'c' + Math.random().toString(36).slice(2, 10); localStorage.setItem('marine-cid', c); }
+      return c;
+    } catch (e) { return 'c' + Math.random().toString(36).slice(2, 10); }
+  }
+  const CID = cidOf();
+  function saveSession(v) { try { if (v) localStorage.setItem('marine-session', JSON.stringify(v)); else localStorage.removeItem('marine-session'); } catch (e) { /* 保存できなくても遊べる */ } }
+  function loadSession() { try { return JSON.parse(localStorage.getItem('marine-session') || 'null'); } catch (e) { return null; } }
+
+  async function join(team, takeover) {
+    const code = lobby.code;
+    if (!/^[A-Z0-9]{4,6}$/.test(code)) { lobby.msg = '部屋コードは、英数字4〜6文字で入力してください。'; render(); return; }
+    if (!net.db) { lobby.msg = '共有データにつながっていません。'; render(); return; }
+    lobby.busy = true; lobby.msg = ''; lobby.taken = ''; render();
+    try {
+      const claim = net.db.doc('games/' + code + '/claims/' + team);
+      if (!takeover) {
+        let lease = await claim.acquire({ holder: CID, ttlMs: 4000 });
+        if (!lease.acquired) { await sleep(1600); lease = await claim.acquire({ holder: CID, ttlMs: 4000 }); }
+        if (!lease.acquired) throw { code: 'busy' };
+        const cs = await claim.get();
+        const cd = cs.exists ? cs.data() : null;
+        if (cd && cd.cid && cd.cid !== CID) { lobby.taken = team; lobby.busy = false; render(); return; }
+      }
+      await claim.set({ cid: CID, at: Date.now() });
+      const seatRef = net.db.doc('games/' + code + '/seats/' + team);
+      const snap = await seatRef.get();
+      docs[team] = normSeat(snap.exists ? snap.data() : null);
+      docs[other(team)] = null;
+      boards[3] = defaultBoard(3); boards[4] = defaultBoard(4);
+      if (!snap.exists) await seatRef.set(clone(docs[team]));
+      G = { mode: 'db', code: code, team: team, cid: CID };
+      subscribeAll();
+      saveSession({ code: code, team: team });
+      lobby.busy = false; render();
+    } catch (e) {
+      lobby.busy = false;
+      lobby.msg = e && e.code === 'busy' ? '席をとるのに失敗しました。もういちど押してください。'
+        : e && e.code === 'invalid_argument' ? '書きこめませんでした。このページの「編集できる権限（Contributor）」が必要です。ページの持ち主に権限をつけてもらってください。'
+        : '部屋に入れませんでした。通信を確かめて、もういちど試してください。';
+      render();
+    }
+  }
+  function subscribeAll() {
+    const db = net.db, t = G.team, p = other(t), base = 'games/' + G.code + '/';
+    const onErr = function () { netError = '共有データとの通信が切れました。ページを開きなおしてください。'; render(); };
+    subs.push(db.doc(base + 'seats/' + p).onSnapshot(function (s) { docs[p] = s.exists ? normSeat(s.data()) : null; renderRemote(); }, onErr));
+    [3, 4].forEach(function (step) {
+      subs.push(db.doc(base + 'board/s' + step).onSnapshot(function (s) {
+        if (isPending('b' + step)) return;
+        boards[step] = s.exists ? normBoard(step, s.data()) : defaultBoard(step);
+        renderRemote();
+      }, onErr));
+    });
+    subs.push(db.doc(base + 'claims/' + t).onSnapshot(function (s) {
+      const d = s.exists ? s.data() : null;
+      if (d && d.cid && d.cid !== CID) { leave(true); lobby.msg = 'ほかの端末が、このチームの席に入りました。'; render(); }
+    }, onErr));
+  }
+  function startLocal() {
+    docs.jp = freshSeat(); docs.kr = freshSeat();
+    boards[3] = defaultBoard(3); boards[4] = defaultBoard(4);
+    G = { mode: 'local', code: 'れんしゅう', team: 'jp', cid: CID };
+    render();
+  }
+  function leave(silent) {
+    subs.forEach(function (u) { try { u(); } catch (e) { /* 解除できなくてもよい */ } });
+    subs = []; Object.keys(writers).forEach(function (k) { clearTimeout(writers[k].t); delete writers[k]; });
+    simToken++; resCache = {};
+    G = null; docs.jp = docs.kr = null; netError = '';
+    if (!silent) saveSession(null);
+  }
+
+  /* ---------- 状態の読み書き ---------- */
+  const mine = function () { return docs[G.team]; };
+  const step = function () { return mine().step; };
+  function planOf(team, st) { const d = docs[team]; return (d && d.plans && d.plans[st]) || freshPlan(); }
+  function myPlan() { const m = mine(); if (!m.plans[m.step]) m.plans[m.step] = freshPlan(); return m.plans[m.step]; }
+  function boardRev(st) { return (st === 3 || st === 4) ? boards[st].rev : '0'; }
+  function isReady(team, st) { const p = planOf(team, st); return !!(p.ready && p.readyRev === boardRev(st)); }
+  function runnable(st) { return isReady('jp', st) && isReady('kr', st); }
+  function persist() { if (G.mode === 'db') saveSeat(); }
+  function persistBoard(st) { boards[st].rev = newRev(); if (G.mode === 'db') saveBoard(st); }
+
+  function curView() {
+    if (!G) return 'lobby';
+    const m = mine();
+    if (!m) return 'lobby';
+    if (m.phase === 'plan' && runnable(m.step)) return 'sim';
+    return m.phase;
+  }
+  let curViewName = 'lobby';
+
+  /* ---------- ポイント計算 ---------- */
+  function coopPay(team) { const c = boards[3].coop; return team === 'jp' ? c.jpPay : C.COOP_COST - c.jpPay; }
+  function spentOwn(team) {
+    const st = step(), p = planOf(team, st); let s = 0;
+    Object.keys(p.alloc).forEach(function (k) { s += p.alloc[k]; });
+    s += Object.keys(p.shares).filter(function (k) { return p.shares[k]; }).length * C.SHARE_COST;
+    if (st === 3 && boards[3].coop.on) s += coopPay(team);
+    return s;
+  }
+  function pooledSpent() {
+    const b = boards[4]; let s = 0;
+    Object.keys(b.alloc).forEach(function (k) { s += b.alloc[k]; });
+    s += Object.keys(b.shares).filter(function (k) { return b.shares[k]; }).length * C.SHARE_COST;
+    return s;
+  }
+  function left() { return step() === 4 ? C.BUDGET_PER_STEP * 2 - pooledSpent() : C.BUDGET_PER_STEP - spentOwn(G.team); }
+  function unreadyMine() { const p = myPlan(); p.ready = false; p.readyRev = ''; }
+
+  /* ---------- シミュレーションに渡す入力 ---------- */
+  // onlyTeam を指定すると、そのチームの作戦だけで入力を作る（自分の見込み表示用。相手の作戦はふくめない）
+  function buildInput(st, onlyTeam) {
+    const actions = [], shares = [];
+    if (st === 4) {
+      const b = boards[4];
+      Object.keys(b.alloc).forEach(function (key) {
+        const pts = b.alloc[key]; if (!pts) return;
+        const parts = key.split(':');
+        actions.push({ loc: parts[0], method: parts[1], points: pts, mode: 'unified', owner: 'both' });
+      });
+      Object.keys(b.shares).forEach(function (k) { if (b.shares[k]) shares.push({ from: 'both', kind: k }); });
+    } else {
+      ['jp', 'kr'].forEach(function (t) {
+        if (onlyTeam && t !== onlyTeam) return;
+        const p = planOf(t, st);
+        Object.keys(p.alloc).forEach(function (key) {
+          const pts = p.alloc[key]; if (!pts) return;
+          const parts = key.split(':');
+          actions.push({ loc: parts[0], method: parts[1], points: pts, mode: 'solo', owner: t });
+        });
+        if (st >= 2) Object.keys(p.shares).forEach(function (k) { if (p.shares[k]) shares.push({ from: t, kind: k }); });
+      });
+      const c = boards[3].coop;
+      if (st === 3 && c.on) actions.push({ loc: c.loc, method: c.method, points: C.COOP_COST, mode: 'coop', owner: 'both', paid: { jp: c.jpPay, kr: C.COOP_COST - c.jpPay } });
+    }
+    return { version: 1, step: st, seasons: C.SEASONS, actions: actions, shares: shares };
+  }
+  let resCache = {};
+  function resultFor(st) {
+    if (!resCache[st]) { resCache[st] = S.run(buildInput(st)); }
+    return resCache[st];
+  }
+
+  /* ---------- ステップごとの文章 ---------- */
+  const STEPS = [
+    { n: 1, title: 'とりあえず拾ってみよう',
+      story: '対馬の浜にも、韓国の海岸にも、海からごみが流れ着きます。まずは、ポイントを使って浜のごみを拾ってみましょう。春・夏・秋・冬の1年間で、浜がどうなるかをシミュレーションで見ます。',
+      mission: 'ポイントをどれだけ「拾うカード」に使うか、自分のチームで決めよう。',
+      budget: '各チーム ' + C.BUDGET_PER_STEP + 'pt（はじめに配られるポイント）',
+      unlock: [{ ico: '🧤', name: '拾うカード', desc: '1pt → ごみ' + C.COLLECT_PER_PT + '個／季節 を回収できます。' }] },
+    { n: 2, title: '別の方法はない？',
+      story: '拾っても拾っても、また流れてくる…。それなら、ごみが海に出る前に減らせないでしょうか。新しく2種類のカードが使えるようになりました。',
+      mission: '「発生源対策」と「情報共有」を使って、浜に届くごみを減らしてみよう。',
+      budget: '各チーム ' + C.BUDGET_PER_STEP + 'pt（ステップごとに配りなおします）',
+      unlock: [
+        { ico: '🌱', name: '発生源対策カード', desc: 'ポイ捨て防止・ごみ箱・河川対策・啓発活動で、海へ出るごみを減らします。' },
+        { ico: '📨', name: '情報共有カード', desc: '発生源情報・ごみ量データ・シミュレーション結果を、相手チームに送ります。' }] },
+    { n: 3, title: '韓国と一緒にやったら？',
+      story: '対馬の浜のごみは、海をこえて流れてくるものが多いと言われています。おとなりの対策は、自分たちの浜にも関係するのでしょうか。2つのチームでポイントを出し合う「協力カード」が使えるようになりました。',
+      mission: '相手チームと相談して、協力カードを「どこで」「どの方法で」使うか決めよう。',
+      budget: '各チーム ' + C.BUDGET_PER_STEP + 'pt（協力カードは合計 ' + C.COOP_COST + 'pt）',
+      unlock: [{ ico: '🤝', name: '協力カード', desc: '2チームで ' + C.COOP_COST + 'pt を出し合い、好きな場所に対策できます。効果は +' + pct(C.COOP_BONUS) + '%！' }] },
+    { n: 4, title: '海を一つとして考える',
+      story: '海に国境はありません。ここからは、日本と韓国のポイントをひとつにまとめて使います。「どこを」「何を」「何pt」で対策するのがいちばん効くか、いっしょに考えましょう。',
+      mission: '合計 ' + (C.BUDGET_PER_STEP * 2) + 'pt を、2チームで相談して自由に配分しよう。',
+      budget: '日本 ' + C.BUDGET_PER_STEP + 'pt ＋ 韓国 ' + C.BUDGET_PER_STEP + 'pt ＝ ' + (C.BUDGET_PER_STEP * 2) + 'pt（ひとつの海ボーナス +' + pct(C.UNIFIED_BONUS) + '%）',
+      unlock: [{ ico: '🌊', name: 'ひとつの海ボード', desc: '2チーム共通の画面で、どこにでも・どの方法でも、20ptを自由に使えます。' }] }
+  ];
+
+  /* ---------- 地図 ---------- */
+  const POS = {
+    krMouth: { x: 222, y: 305 }, krCoast: { x: 216, y: 175 },
+    jpMouth: { x: 580, y: 272 }, jpCoast: { x: 566, y: 205 },
+    extKR: { x: 262, y: 448 }, extJP: { x: 470, y: 448 }
+  };
+  function mapSVG(pre) {
+    return '<svg class="map" viewBox="0 0 800 440" role="img" aria-label="韓国と対馬のあいだの海の地図。ごみは海をこえて両方の海岸に流れ着きます。">' +
+      '<defs><linearGradient id="' + pre + 'sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--sea-top)"/><stop offset="1" style="stop-color:var(--sea-bot)"/></linearGradient></defs>' +
+      '<rect width="800" height="440" fill="url(#' + pre + 'sea)"/>' +
+      '<path class="flow" d="M250 430 C 380 380 520 330 710 190"/>' +
+      '<path class="land" d="M0 0 H208 C236 60 198 118 214 172 C230 222 204 262 224 314 C240 356 214 400 232 440 H0 Z"/>' +
+      '<ellipse class="land" cx="612" cy="236" rx="98" ry="30" transform="rotate(64 612 236)"/>' +
+      '<text class="mt big" x="24" y="48">韓国</text>' +
+      '<text class="mt big" x="668" y="140">対馬</text>' +
+      '<text class="mt sm" x="196" y="126" text-anchor="end">韓国の海岸</text>' +
+      '<text class="mt sm" x="548" y="150" text-anchor="end">対馬の浜</text>' +
+      '<g transform="translate(120,300)"><circle class="src" r="22" fill="var(--kr)"/><text y="8" text-anchor="middle" font-size="22">🏭</text><text class="mt sm" y="42" text-anchor="middle">韓国の発生源</text></g>' +
+      '<g transform="translate(618,262)"><circle class="src" r="22" fill="var(--jp)"/><text y="8" text-anchor="middle" font-size="22">🏭</text><text class="mt sm" y="42" text-anchor="middle">日本の発生源</text></g>' +
+      '<text class="mt sm" x="400" y="426" text-anchor="middle">▲ 外の海から（ほかの国・地域）</text>' +
+      '<circle class="pile" id="' + pre + 'pile-kr" cx="' + POS.krCoast.x + '" cy="' + POS.krCoast.y + '" r="9"/>' +
+      '<circle class="pile" id="' + pre + 'pile-jp" cx="' + POS.jpCoast.x + '" cy="' + POS.jpCoast.y + '" r="9"/>' +
+      '<g id="' + pre + 'particles"></g></svg>';
+  }
+
+  /* ---------- 画面の上の部分（席の表示・進行バー） ---------- */
+  function partnerStatus() {
+    const p = other(G.team), pd = docs[p], st = step();
+    let txt;
+    if (!pd) txt = 'まだ参加していません';
+    else if (pd.step < st) txt = 'STEP ' + pd.step + ' を進行中';
+    else if (pd.step > st) txt = '先に進んでいます（STEP ' + pd.step + '）';
+    else if (pd.phase === 'intro') txt = 'STEP ' + st + ' のはじまり';
+    else if (pd.phase === 'plan') txt = isReady(p, st) ? '決定ずみ ✓' : '作戦を考え中';
+    else txt = '結果を見ています';
+    return '<i class="dot ' + p + '"></i>' + TEAM[p].name + '：' + txt;
+  }
+  function viewSeatbar() {
+    if (!G) return '';
+    const t = G.team, p = other(t);
+    return '<div class="seatbar"><span class="seat ' + t + '"><b>' + TEAM[t].flag + ' ' + TEAM[t].name + '</b>' + (G.mode === 'local' ? '（1台モード）' : '') + '</span>' +
+      (G.mode === 'db' ? '<span class="room">部屋コード <b>' + esc(G.code) + '</b></span>' : '') +
+      '<span class="pstat" role="status">' + partnerStatus() + '</span><span class="grow"></span>' +
+      (G.mode === 'local' ? '<button class="btn ghost sm" data-act="switch">' + TEAM[p].name + 'に切りかえ</button>' : '') +
+      '<button class="btn ghost sm" data-act="leave">部屋を出る</button></div>';
+  }
+  function viewStepbar(v) {
+    if (!G) return '';
+    const cur = (v === 'final' || v === 'reflect') ? 5 : step();
+    return '<ol class="stepbar">' + SHORT.map(function (t, i) {
+      const n = i + 1, cls = n < cur ? 'done' : n === cur ? 'cur' : '';
+      return '<li class="' + cls + '"' + (n === cur ? ' aria-current="step"' : '') + '><span class="bar"></span><span class="lab">STEP ' + n + '<br>' + t + '</span></li>';
+    }).join('') + '</ol>';
+  }
+
+  /* ---------- 画面: 入り口（部屋コードとチーム選び） ---------- */
+  function viewLobby() {
+    const dbs = net.db === undefined ? 'pending' : net.db ? 'ok' : 'none';
+    const dis = (dbs !== 'ok' || lobby.busy) ? ' disabled' : '';
+    const sess = loadSession();
+    let h = '<section class="hero"><div>' +
+      '<p class="kicker">学習シミュレーションゲーム</p>' +
+      '<h1>対馬・韓国 海洋ごみ協働ゲーム</h1>' +
+      '<p class="lead">海は、つながっている。拾うだけで足りる？ となりの国と力を合わせたら、どこまで変わる？ 日本と韓国、2つのチームで考えよう。</p>' +
+      '<ul class="goals">' + [
+        '海のごみは、海でつながっている',
+        '拾うだけでは、解決できない',
+        'ごみのもと（発生源）を減らすことが大切',
+        '情報を分けあうと、効果が上がる',
+        '国をこえて協力すると、もっと大きな成果が出る'
+      ].map(function (t, i) { return '<li><b>' + (i + 1) + '</b><span>' + t + '</span></li>'; }).join('') + '</ul></div>' +
+      '<div class="panel join"><h2>ゲームに入る</h2>' +
+      '<p class="note">2チームとも、同じ「部屋コード」を入れます。入ったチームの画面は、相手チームには見えません。</p>' +
+      '<label for="room">部屋コード（英数字4〜6文字）</label>' +
+      '<div class="row"><input id="room" data-fk="room" type="text" inputmode="latin" autocomplete="off" autocapitalize="characters" maxlength="6" placeholder="例: UMI7" value="' + esc(lobby.code) + '">' +
+      '<button class="btn ghost sm" data-act="newcode" data-fk="newcode">新しいコードをつくる</button></div>' +
+      '<p class="sec">チームをえらぶ</p><div class="teams">' +
+      ['jp', 'kr'].map(function (t) {
+        return '<button class="teambtn ' + t + '" data-act="join" data-team="' + t + '" data-fk="join:' + t + '"' + dis + '><span class="fl">' + TEAM[t].flag + '</span><b>' + TEAM[t].name + '</b><small>' + TEAM[t].sub + '</small></button>';
+      }).join('') + '</div>';
+    if (lobby.busy) h += '<p class="note" role="status">部屋に入っています…</p>';
+    if (dbs === 'pending') h += '<p class="note" role="status">共有データへの接続を確かめています…</p>';
+    if (dbs === 'none') h += '<p class="warn">共有データにつながっていません。サインインして、このページを開ける権限（Contributor）をもらうと、2台でゲームできます。1台で試す場合は下の「ひとりで練習」を使ってください。</p>';
+    if (lobby.msg) h += '<p class="warn" role="alert">' + esc(lobby.msg) + '</p>';
+    if (lobby.taken) {
+      h += '<div class="warn" role="alert"><p>' + TEAM[lobby.taken].name + 'の席は、ほかの端末がすでに使っています。前に使っていた端末が使えなくなった場合は、この端末でひきつげます。</p>' +
+        '<div class="row" style="margin-top:8px"><button class="btn sm" data-act="takeover" data-team="' + lobby.taken + '">この端末でひきつぐ</button><button class="btn ghost sm" data-act="cancel-taken">やめる</button></div></div>';
+    }
+    if (sess && dbs === 'ok' && !lobby.busy) {
+      h += '<div class="resume"><p class="note">前回の続き：部屋 <b>' + esc(sess.code) + '</b>・' + TEAM[sess.team].name + '</p><button class="btn sm" data-act="resume" data-fk="resume">つづきから入る</button></div>';
+    }
+    h += '<hr class="hr"><button class="btn ghost sm" data-act="practice" data-fk="practice">ひとりで練習する（1台で両チームを操作）</button></div></section>' +
+      '<section class="how">' +
+      '<div class="panel"><h3>① 自分のチームの席につく</h3><p>日本チーム（対馬）か韓国チームをえらびます。各チーム ' + C.BUDGET_PER_STEP + 'pt からスタートします。</p></div>' +
+      '<div class="panel"><h3>② カードにポイントを配る</h3><p>自分のチームの画面でどの対策に何ptを使うか決めます。相手の作戦は見えません。ステップが進むと新しいカードが解放されます。</p></div>' +
+      '<div class="panel"><h3>③ 1年間を見てみよう</h3><p>両チームが「決定」を押すと、春・夏・秋・冬のシミュレーションが始まります。</p></div></section>' +
+      '<div class="wavebar" aria-hidden="true"><svg viewBox="0 0 400 34" preserveAspectRatio="none"><path d="M0 18 q25 -14 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V34 H0z" fill="var(--sea)" fill-opacity=".35"/><path d="M0 24 q25 -12 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V34 H0z" fill="var(--sea)" fill-opacity=".55"/></svg></div>';
+    return h;
+  }
+
+  /* ---------- 画面: ステップ紹介 ---------- */
+  function viewIntro() {
+    const st = STEPS[step() - 1];
+    const prev = step() > 1 ? '<p class="note" style="margin-top:10px">これまでのカードも、そのまま使えます。</p>' : '';
+    return '<section class="intro"><div class="panel ' + G.team + '">' +
+      '<p class="kicker">STEP ' + st.n + '</p><h2>「' + st.title + '」</h2>' +
+      '<p class="story">' + st.story + '</p>' +
+      '<p class="mission"><b>ミッション：</b>' + st.mission + '</p>' +
+      '<p class="budget">' + st.budget + '</p>' +
+      '<button class="btn big" data-act="begin" data-fk="begin">作戦をたてる</button></div>' +
+      '<div class="panel"><h3>新しく使えるカード</h3>' +
+      st.unlock.map(function (u) {
+        return '<div class="newcard"><span class="ico">' + u.ico + '</span><div><b>' + u.name + '</b><span class="badge-new">NEW</span><p>' + u.desc + '</p></div></div>';
+      }).join('') + prev + '</div></section>';
+  }
+
+  /* ---------- 画面: 作戦ボード ---------- */
+  function pointbar() {
+    function pips(total, used, cls) {
+      let h = '';
+      const u = Math.max(0, Math.min(total, used));
+      for (let i = 0; i < total; i++) h += '<span class="pip' + (i < total - u ? '' : ' off') + '"></span>';
+      return '<div class="pips ' + cls + '" aria-hidden="true">' + h + '</div>';
+    }
+    if (step() === 4) {
+      const total = C.BUDGET_PER_STEP * 2, l = left();
+      return '<div class="pointbar one" role="status"><div class="pb both"><span class="num">' + l + '<small>pt</small></span><span class="who">ひとつの海のポイント（のこり）</span>' + pips(total, total - l, 'both') + '</div></div>';
+    }
+    const t = G.team, l = left();
+    return '<div class="pointbar one" role="status"><div class="pb ' + t + '"><span class="num">' + l + '<small>pt</small></span><span class="who">' + TEAM[t].flag + ' ' + TEAM[t].name + ' のこり</span>' + pips(C.BUDGET_PER_STEP, C.BUDGET_PER_STEP - l, t) + '</div></div>';
+  }
+
+  function forecast() {
+    const t = G.team, st = step();
+    const f = S.preview(buildInput(st, st === 4 ? null : t));
+    let h = '<div class="forecast">';
+    if (st === 4) {
+      h += '<span>1季節に拾える数：対馬 <b>' + fmt(f.collect.jp) + '</b>個／韓国 <b>' + fmt(f.collect.kr) + '</b>個</span><span>発生源のごみの削減：日本 <b>−' + pct(f.cut.jp) + '%</b>／韓国 <b>−' + pct(f.cut.kr) + '%</b></span>';
+    } else {
+      h += '<span>' + TEAM[t].coast + 'で1季節に拾える数：<b>' + fmt(f.collect[t]) + '</b>個</span>';
+      if (st >= 2) h += '<span>' + (t === 'jp' ? '日本' : '韓国') + '側の発生源のごみの削減：<b>−' + pct(f.cut[t]) + '%</b></span>';
+    }
+    return h + '</div>';
+  }
+
+  function cardHTML(key) {
+    const parts = key.split(':'), loc = parts[0], method = parts[1], m = M[method], team = L[loc].team;
+    const uni = step() === 4;
+    const n = (uni ? boards[4].alloc : myPlan().alloc)[key] || 0;
+    const eff = method === 'pickup' ? '1pt → ごみ' + C.COLLECT_PER_PT + '個／季節' : '1pt → ごみのもと −' + pct(m.rate) + '%';
+    const canInc = n < m.max && left() > 0;
+    const isNew = (step() === 2 && method !== 'pickup' && !uni);
+    return '<div class="card ' + team + (n ? ' on' : '') + '">' +
+      '<span class="ico" aria-hidden="true">' + m.icon + '</span>' +
+      '<div><h4>' + m.label + (isNew ? '<span class="badge-new">NEW</span>' : '') + '</h4><p>' + m.desc + '</p><p class="eff">' + eff + '（さいだい' + m.max + 'pt）</p></div>' +
+      '<div class="stepper"><button class="st" data-act="dec" data-key="' + key + '" data-fk="dec:' + key + '" aria-label="' + m.label + 'を1pt へらす"' + (n > 0 ? '' : ' disabled') + '>−</button>' +
+      '<output aria-live="polite">' + n + '<small>pt</small></output>' +
+      '<button class="st" data-act="inc" data-key="' + key + '" data-fk="inc:' + key + '" aria-label="' + m.label + 'を1pt ふやす"' + (canInc ? '' : ' disabled') + '>＋</button></div></div>';
+  }
+  function shareCard(group) {
+    const sh = SH, uni = group === 'both';
+    const shares = uni ? boards[4].shares : myPlan().shares;
+    const team = uni ? 'both' : group;
+    return Object.keys(sh).map(function (kind) {
+      const on = !!shares[kind], can = on || left() >= C.SHARE_COST;
+      return '<button class="share ' + team + '" data-act="share" data-kind="' + kind + '" data-fk="share:' + kind + '" aria-pressed="' + on + '"' + (can ? '' : ' disabled') + '>' +
+        '<span class="ico" aria-hidden="true">' + sh[kind].icon + '</span><span><b>' + sh[kind].label + '</b><small>' + sh[kind].desc + '</small></span><span class="cost">' + C.SHARE_COST + 'pt</span></button>';
+    }).join('');
+  }
+  function teamPanel(team) {
+    const t = TEAM[team], st = step();
+    let h = '<section class="panel team-panel ' + team + '"><div class="team-head"><h3>' + t.flag + ' ' + t.name + '</h3><span class="sub">' + t.sub + '</span></div>';
+    h += '<p class="lock">🔒 この画面は ' + t.name + ' だけに見えます。</p>';
+    h += '<p class="sec">🏖️ 浜でひろう（' + t.coast + '）</p>' + cardHTML(team + '_coast:pickup');
+    if (st >= 2) {
+      h += '<p class="sec">🌱 ごみのもとを減らす（' + (team === 'jp' ? '日本' : '韓国') + '側の発生源）</p>';
+      SOURCE_METHODS.forEach(function (m) { h += cardHTML(team + '_source:' + m); });
+      h += '<p class="sec">📨 相手チームに情報を送る（送った相手の対策が +' + pct(C.INFO_PER_CARD) + '% ずつ強くなる）</p>' + shareCard(team);
+    }
+    return h + '</section>';
+  }
+
+  function coopPanel() {
+    const c = boards[3].coop, locKind = L[c.loc].kind, t = G.team;
+    const methodList = locKind === 'coast' ? ['pickup'] : SOURCE_METHODS;
+    const canOn = c.on || left() >= coopPay(t);
+    const krPay = C.COOP_COST - c.jpPay;
+    return '<section class="panel coop both"><h3>🤝 協力カード<span class="cost">' + C.COOP_COST + 'pt</span><span class="badge-new">NEW</span></h3>' +
+      '<p class="lock shared">🌊 この協力ボードは、日本・韓国の2チームに同じものが見えています。相談して決めましょう。</p>' +
+      '<p class="desc">日本と韓国でポイントを出し合い、1か所をいっしょに対策します。ひとりで使うより効果が +' + pct(C.COOP_BONUS) + '% 強くなります。</p>' +
+      '<button class="chip" data-act="coop-toggle" data-fk="coop-toggle" aria-pressed="' + c.on + '"' + (canOn ? '' : ' disabled') + '>' + (c.on ? '使う（取り消す）' : '使う') + '</button>' +
+      (!canOn && !c.on ? '<p class="note" style="margin-top:8px">ポイントが足りません。ほかの対策を減らして、' + coopPay(t) + 'pt あけてください。</p>' : '') +
+      '<div class="coop-body"' + (c.on ? '' : ' hidden') + '><p class="sec">どこで？</p><div class="chips">' +
+      Object.keys(L).map(function (k) {
+        return '<button class="chip ' + L[k].team + '" data-act="coop-loc" data-loc="' + k + '" data-fk="coop-loc:' + k + '" aria-pressed="' + (c.loc === k) + '">' + L[k].label + '</button>';
+      }).join('') + '</div><p class="sec">なにを？</p><div class="chips">' +
+      methodList.map(function (m) {
+        return '<button class="chip" data-act="coop-method" data-method="' + m + '" data-fk="coop-method:' + m + '" aria-pressed="' + (c.method === m) + '">' + M[m].icon + ' ' + M[m].label + '</button>';
+      }).join('') + '</div><p class="sec">ポイントの出し合い（合計 ' + C.COOP_COST + 'pt）</p>' +
+      '<div class="pay"><button class="st" data-act="coop-pay" data-d="-1" data-fk="coop-pay-m" aria-label="日本の負担をへらす">−</button>' +
+      '<span class="jp">日本 ' + c.jpPay + 'pt</span><span>＋</span><span class="kr">韓国 ' + krPay + 'pt</span>' +
+      '<button class="st" data-act="coop-pay" data-d="1" data-fk="coop-pay-p" aria-label="日本の負担をふやす">＋</button></div></div></section>';
+  }
+
+  function unifiedBoard() {
+    const order = ['kr_source', 'jp_source', 'kr_coast', 'jp_coast'];
+    const names = { kr_source: '🏭 韓国側の発生源', jp_source: '🏭 日本側の発生源', kr_coast: '🏖️ 韓国の海岸', jp_coast: '🏖️ 対馬の浜' };
+    let h = '<p class="lock shared">🌊 この画面は、日本・韓国の2チームに同じものが見えています。相談して決めましょう。</p><div class="boards">';
+    order.forEach(function (loc) {
+      const team = L[loc].team;
+      h += '<section class="panel team-panel ' + team + '"><div class="team-head"><h3>' + names[loc] + '</h3></div><p class="sec">' + (L[loc].kind === 'coast' ? 'ここで拾う' : 'ここでごみのもとを減らす') + '</p>';
+      (L[loc].kind === 'coast' ? ['pickup'] : SOURCE_METHODS).forEach(function (m) { h += cardHTML(loc + ':' + m); });
+      h += '</section>';
+    });
+    h += '</div><section class="panel both" style="margin-top:16px"><div class="team-head"><h3>📨 海のデータを共有する</h3></div><p class="note" style="margin-bottom:8px">1枚ごとに、両方の国の対策が +' + pct(C.INFO_PER_CARD) + '% ずつ強くなります。</p>' + shareCard('both') + '</section>';
+    return h;
+  }
+
+  function viewPlan() {
+    const st = step(), info = STEPS[st - 1], t = G.team, p = other(t);
+    const ready = isReady(t, st), pReady = isReady(p, st), over = left() < 0;
+    let h = pointbar();
+    h += '<p class="kicker">STEP ' + info.n + '</p><h2 style="font-size:1.4rem;font-weight:900;margin-bottom:4px">' + info.title + '</h2><p class="note" style="margin-bottom:6px">' + info.mission + '</p>';
+    h += forecast();
+    if (over) h += '<p class="warn" role="alert">ポイントが足りません。あと ' + (-left()) + 'pt ぶん、へらしてください。</p>';
+    if (st === 4) h += unifiedBoard();
+    else {
+      h += '<div class="boards one">' + teamPanel(t) + '</div>';
+      if (st === 3) h += coopPanel();
+    }
+    const label = ready ? '決定ずみ ✓（もういちど考える）' : '作戦を決定する';
+    const lockedBtn = ready ? pReady : over;
+    h += '<div class="readyrow"><button class="btn big team ' + (st === 4 ? 'both' : t) + '" data-act="ready" data-fk="ready" aria-pressed="' + ready + '"' + (lockedBtn ? ' disabled' : '') + '>' + label + '</button>' +
+      '<span class="pstat big" role="status">' + partnerStatus() + '</span></div>' +
+      '<p class="note" style="margin-top:10px">' + (ready
+        ? (pReady ? 'まもなく、1年間のシミュレーションが始まります。' : '相手チームが「決定」するのを待っています。待っている間は、作戦を変えたいときに「もういちど考える」を押せます。')
+        : '決まったら「作戦を決定する」を押します。2チームとも決定すると、1年間のシミュレーションが始まります。使いきらなくてもOKです。' + (st === 4 ? '（共通ボードを変えると、2チームとも決定がやりなおしになります）' : '')) + '</p>';
+    if (st === 3) h += '<p class="note">協力ボードを変えると、2チームとも決定がやりなおしになります。</p>';
+    return h;
+  }
+
+  /* ---------- 画面: シミュレーション ---------- */
+  let simToken = 0, simCancel = null, lastKey = '';
+  function viewSim() {
+    return '<div class="simhead"><div><p class="kicker">STEP ' + step() + ' シミュレーション中</p><h2 style="font-size:1.4rem;font-weight:900">1年間のごみの動き</h2></div>' +
+      '<div class="seasons" id="seasons" aria-live="polite">' + C.SEASONS.map(function (s) { return '<span>' + s + '</span>'; }).join('') + '</div></div>' +
+      mapSVG('s-') +
+      '<p class="legend"><span><i class="dot jp"></i>日本から出たごみ</span><span><i class="dot kr"></i>韓国から出たごみ</span><span><i class="dot ext"></i>外の海から</span><span><i class="dot ok"></i>拾えたごみ</span></p>' +
+      '<div class="hud"><div class="panel jp" id="hud-jp"></div><div class="panel kr" id="hud-kr"></div></div>' +
+      '<div class="row" style="margin-top:14px"><button class="btn ghost" data-act="skip">結果へスキップ</button></div>';
+  }
+
+  function animateSim(res, done) {
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const layer = $('#s-particles'), seasonEls = document.querySelectorAll('#seasons span');
+    const parts = [], timers = [];
+    let raf = 0, finished = false;
+    const SEASON_MS = reduced ? 800 : 2300;
+    const ROUTES = {
+      jp: { jp: [POS.jpMouth, POS.jpCoast], kr: [POS.krMouth, POS.jpCoast], ext: [POS.extJP, POS.jpCoast] },
+      kr: { jp: [POS.jpMouth, POS.krCoast], kr: [POS.krMouth, POS.krCoast], ext: [POS.extKR, POS.krCoast] }
+    };
+    const COLORS = { jp: 'var(--jp)', kr: 'var(--kr)', ext: 'var(--ext)' };
+    function stopAll() { finished = true; timers.forEach(clearTimeout); cancelAnimationFrame(raf); simCancel = null; }
+
+    function setHud(i) {
+      const s = res.seasons[i];
+      seasonEls.forEach(function (el, k) { el.classList.toggle('now', k === i); });
+      ['jp', 'kr'].forEach(function (c) {
+        const r = s[c];
+        $('#hud-' + c).innerHTML = '<b>' + TEAM[c].coast + '</b>　' + s.label + '<br>流れ着いた <b>' + fmt(r.inflow) + '</b>個　拾った <b>' + fmt(r.collected) + '</b>個<br>浜に のこっている <b>' + fmt(r.stock) + '</b>個';
+        const pile = $('#s-pile-' + c);
+        if (pile) pile.setAttribute('r', String(Math.min(30, 7 + Math.sqrt(r.stock) * 0.5)));
+      });
+    }
+    function spawn(i) {
+      const s = res.seasons[i];
+      ['jp', 'kr'].forEach(function (coast) {
+        const row = s[coast], ratio = row.inflow > 0 ? row.collected / row.inflow : 0;
+        ['jp', 'kr', 'ext'].forEach(function (origin) {
+          const n = Math.min(10, Math.ceil(row.from[origin] / 30));
+          for (let k = 0; k < n; k++) {
+            const delay = (k / Math.max(1, n)) * SEASON_MS * 0.4;
+            timers.push(setTimeout(function () {
+              if (finished || !layer.isConnected) return;
+              const rt = ROUTES[coast][origin];
+              const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+              el.setAttribute('r', '5'); el.setAttribute('fill', COLORS[origin]);
+              el.setAttribute('stroke', 'var(--surface)'); el.setAttribute('stroke-width', '1.5');
+              layer.appendChild(el);
+              parts.push({ el: el, a: rt[0], b: rt[1], t0: performance.now(), dur: 1300 + Math.random() * 400, picked: Math.random() < ratio, ph: Math.random() * 6 });
+            }, delay));
+          }
+        });
+      });
+    }
+    function frame(t) {
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i], u = (t - p.t0) / p.dur;
+        if (u >= 1) {
+          if (p.picked) { p.el.setAttribute('fill', 'var(--good)'); p.el.setAttribute('r', '8'); (function (el) { setTimeout(function () { el.remove(); }, 450); })(p.el); }
+          else p.el.remove();
+          parts.splice(i, 1); continue;
+        }
+        const x = p.a.x + (p.b.x - p.a.x) * u, y = p.a.y + (p.b.y - p.a.y) * u + Math.sin(u * 9 + p.ph) * 7;
+        p.el.setAttribute('cx', x.toFixed(1)); p.el.setAttribute('cy', y.toFixed(1));
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    function finish() { if (finished) return; stopAll(); done(); }
+    simCancel = finish;
+    let i = 0;
+    function nextSeason() {
+      if (finished) return;
+      if (!layer.isConnected) { stopAll(); return; }   // 画面が切りかわったら、何もせず止める
+      if (i >= res.seasons.length) { timers.push(setTimeout(finish, reduced ? 400 : 1200)); return; }
+      setHud(i);
+      if (!reduced) spawn(i);
+      i++;
+      timers.push(setTimeout(nextSeason, SEASON_MS));
+    }
+    if (!reduced) raf = requestAnimationFrame(frame);
+    nextSeason();
+  }
+
+  /* ---------- グラフ・結果の部品 ---------- */
+  function niceMax(v) {
+    if (v <= 0) return 100;
+    const mag = Math.pow(10, Math.floor(Math.log10(v)));
+    const k = [1, 2, 2.5, 5, 10].filter(function (m) { return m * mag >= v; })[0];
+    return k * mag;
+  }
+  function lineChart(coast, r) {
+    const W = 360, H = 214, pl = 46, pr = 18, pt = 20, pb = 30;
+    const base = [0].concat(r.baseline.stockBySeason[coast]);
+    const now = [0].concat(r.seasons.map(function (s) { return s[coast].stock; }));
+    const max = niceMax(Math.max.apply(null, base.concat(now)));
+    const labels = ['年初'].concat(r.seasons.map(function (s) { return s.label; }));
+    const X = function (i) { return pl + (W - pl - pr) * i / (labels.length - 1); };
+    const Y = function (v) { return pt + (H - pt - pb) * (1 - v / max); };
+    const pts = function (a) { return a.map(function (v, i) { return X(i).toFixed(1) + ',' + Y(v).toFixed(1); }).join(' '); };
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + TEAM[coast].coast + 'のごみの残りの変化。年末は' + fmt(now[4]) + '個で、何もしない場合は' + fmt(base[4]) + '個。">';
+    [0, 0.5, 1].forEach(function (f) {
+      const v = max * f;
+      svg += '<line class="grid" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '"/><text x="' + (pl - 6) + '" y="' + (Y(v) + 4).toFixed(1) + '" text-anchor="end">' + fmt(v) + '</text>';
+    });
+    labels.forEach(function (l, i) { svg += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + l + '</text>'; });
+    svg += '<polygon class="ar ' + coast + '" points="' + X(0).toFixed(1) + ',' + Y(0).toFixed(1) + ' ' + pts(now) + ' ' + X(4).toFixed(1) + ',' + Y(0).toFixed(1) + '"/>';
+    svg += '<polyline class="ln base" points="' + pts(base) + '"/><polyline class="ln ' + coast + '" points="' + pts(now) + '"/>';
+    svg += '<circle class="pt ' + coast + '" cx="' + X(4).toFixed(1) + '" cy="' + Y(now[4]).toFixed(1) + '" r="5"/>';
+    svg += '<text class="val" x="' + (X(4) - 8).toFixed(1) + '" y="' + (Y(now[4]) - 10).toFixed(1) + '" text-anchor="end">' + fmt(now[4]) + '個</text>';
+    return svg + '</svg>';
+  }
+  function chartBox(coast, r) {
+    return '<section class="panel chart ' + coast + '"><h3>' + TEAM[coast].coast + 'のごみの残り（個）</h3>' + lineChart(coast, r) +
+      '<p class="legend"><span><i class="dot ext"></i>何もしないとき</span><span><i class="dot ' + coast + '"></i>この作戦</span></p></section>';
+  }
+  function originBar(coast, o) {
+    const sum = o.jp + o.kr + o.ext || 1;
+    const seg = function (k, name) {
+      const w = o[k] / sum * 100;
+      return '<i class="' + k + '" style="flex:' + o[k].toFixed(2) + '" title="' + name + '">' + (w >= 12 ? pct(o[k] / sum) + '%' : '') + '</i>';
+    };
+    return '<div><p class="cap">' + TEAM[coast].coast + 'に流れ着いたごみは、どこから来た？</p><div class="stack" role="img" aria-label="日本' + pct(o.jp / sum) + '%、韓国' + pct(o.kr / sum) + '%、外の海' + pct(o.ext / sum) + '%">' +
+      seg('jp', '日本から') + seg('kr', '韓国から') + seg('ext', '外の海から') + '</div></div>';
+  }
+  function tile(label, value, unit, cls) {
+    return '<div class="tile ' + (cls || '') + '"><div class="v">' + value + '<small>' + (unit || '個') + '</small></div><div class="l">' + label + '</div></div>';
+  }
+  // 実施した対策。reveal=false のあいだは、相手チームだけの対策は出さない（結果発表で公開）
+  function actionTags(input, reveal) {
+    const me = G.team;
+    const acts = input.actions.filter(function (a) { return reveal || a.owner === 'both' || a.owner === me; });
+    const shs = input.shares.filter(function (s) { return reveal || s.from === 'both' || s.from === me; });
+    const tags = acts.map(function (a) {
+      const team = a.mode === 'solo' ? a.owner : 'both';
+      return '<span class="tag ' + team + (a.mode === 'coop' ? ' coop' : '') + '">' + (a.mode === 'coop' ? '🤝 ' : '') + L[a.loc].label + '：' + M[a.method].label + ' ' + a.points + 'pt</span>';
+    });
+    shs.forEach(function (s) {
+      tags.push('<span class="tag ' + (s.from === 'both' ? 'both' : s.from) + '">📨 ' + SH[s.kind].label + (s.from === 'both' ? '' : '（' + TEAM[s.from].name + '→' + TEAM[s.from === 'jp' ? 'kr' : 'jp'].name + '）') + '</span>');
+    });
+    const hidden = !reveal && input.step < 4 && (input.actions.length > acts.length || input.shares.length > shs.length);
+    return (tags.length ? '<div class="tags">' + tags.join('') + '</div>' : '<p class="note">対策は使いませんでした。</p>') +
+      (hidden ? '<p class="note" style="margin-top:8px">相手チームだけの対策は、最後の「結果発表」で公開されます。</p>' : '');
+  }
+
+  /* ---------- 画面: 結果（STEP1〜3） ---------- */
+  function insight(st, r, input) {
+    const t = r.total;
+    if (st === 1) {
+      return '<p><b>' + fmt(t.collected.all) + '個</b>拾ったのに、同じ1年のあいだに<b>' + fmt(t.arrived.all) + '個</b>のごみが新しく流れ着きました。</p>' +
+        '<p>年末にも、まだ<b>' + fmt(t.remaining.all) + '個</b>が浜に残っています。拾うだけでは追いつかない…！</p>';
+    }
+    const prev = resultFor(st - 1);
+    if (st === 2) {
+      const used = input.actions.some(function (a) { return M[a.method].kind === 'source'; });
+      if (!used) return '<p>まだ発生源対策を使っていません。つぎは「ごみのもと」を減らすカードを使って、流れ着く量がどう変わるか見てみよう。</p>';
+      return '<p>発生源対策で、流れ着くごみが何もしないときより<b>' + fmt(r.sourceReduction.all) + '個</b>減りました。</p>' +
+        '<p>残ったごみは、STEP1の<b>' + fmt(prev.total.remaining.all) + '個</b>から<b>' + fmt(t.remaining.all) + '個</b>になりました。' +
+        (r.bonusEffect.info > 0 ? '情報共有の効果で、さらに<b>' + fmt(r.bonusEffect.info) + '個</b>減っています。' : '') + '</p>';
+    }
+    const coop = input.actions.some(function (a) { return a.mode === 'coop'; });
+    let h = '<p>韓国側の対策で、対馬に届くごみが<b>' + fmt(r.crossEffect.toJP) + '個</b>減りました。日本側の対策で、韓国の海岸に届くごみも<b>' + fmt(r.crossEffect.toKR) + '個</b>減りました。</p>';
+    h += coop ? '<p>協力カードと情報共有の追加効果で、さらに<b>' + fmt(r.bonusEffect.all) + '個</b>ぶん、ごみが減っています。</p>'
+              : '<p>協力カードをまだ使っていません。使うと、ひとりでやるより効果が強くなります。</p>';
+    return h;
+  }
+  function capNote(r) {
+    const hit = [];
+    if (r.cut && r.cut.jp >= C.CUT_CAP - 0.001) hit.push('日本側');
+    if (r.cut && r.cut.kr >= C.CUT_CAP - 0.001) hit.push('韓国側');
+    return hit.length ? '<p>' + hit.join('と') + 'の発生源対策は上限（−' + pct(C.CUT_CAP) + '%）に達しています。これ以上ふやしても効果は増えないので、余ったポイントは別の場所に使えたかもしれません。</p>' : '';
+  }
+  function viewResult() {
+    const st = step(), r = resultFor(st), t = r.total, input = buildInput(st);
+    let tiles = tile('流れ着いたごみ', fmt(t.arrived.all)) + tile('拾ったごみ', fmt(t.collected.all));
+    if (st >= 2) tiles += tile('発生源対策で減った量', fmt(r.sourceReduction.all), '個', 'good');
+    if (st >= 2) tiles += tile('情報共有の追加効果', fmt(r.bonusEffect.info), '個', 'good');
+    if (st === 3) tiles += tile('協力カードの追加効果', fmt(r.bonusEffect.coop), '個', 'good');
+    tiles += tile('年末に浜に残ったごみ', fmt(t.remaining.all));
+    return '<section class="res"><p class="kicker">STEP ' + st + ' の結果</p><h2>「' + STEPS[st - 1].title + '」の1年</h2>' +
+      (r.fallback ? '<p class="warn">外部シミュレーションにつながらなかったため、ダミー計算で実行しました。</p>' : '') +
+      '<div class="insight">' + insight(st, r, input) + (st >= 2 ? capNote(r) : '') + '</div>' +
+      '<div class="tiles">' + tiles + '</div>' +
+      '<div class="charts">' + chartBox('jp', r) + chartBox('kr', r) + '</div>' +
+      '<section class="panel origin"><h3>ごみの出どころ（この1年）</h3>' + originBar('jp', t.byOrigin.jp) + originBar('kr', t.byOrigin.kr) +
+      '<p class="legend"><span><i class="dot jp"></i>日本から</span><span><i class="dot kr"></i>韓国から</span><span><i class="dot ext"></i>外の海から</span></p></section>' +
+      '<section class="panel" style="margin-top:16px"><h3 style="font-size:1rem;margin-bottom:8px">あなたのチームが実施した対策</h3>' + actionTags(input, false) + '</section>' +
+      '<div class="row next"><button class="btn big" data-act="next" data-fk="next">STEP ' + (st + 1) + 'へ進む</button></div></section>';
+  }
+
+  /* ---------- 画面: 結果発表（STEP5） ---------- */
+  function viewFinal() {
+    const r = resultFor(4), t = r.total, input = buildInput(4);
+    const baseAll = r.baseline.remaining.all || 1;
+    const rows = [{ lab: 'なにもしない', jp: r.baseline.remaining.jp, kr: r.baseline.remaining.kr }];
+    [1, 2, 3, 4].forEach(function (n) {
+      const x = resultFor(n);
+      rows.push({ lab: 'STEP ' + n, jp: x.total.remaining.jp, kr: x.total.remaining.kr });
+    });
+    const cmp = rows.map(function (x, i) {
+      const tot = x.jp + x.kr, red = i === 0 ? '' : '（−' + pct(1 - tot / baseAll) + '%）';
+      return '<div class="cmp-row"><span class="cmp-lab">' + x.lab + '</span><div class="cmp-bar" role="img" aria-label="' + x.lab + 'の残りごみ ' + fmt(tot) + '個"><i class="jp" style="width:' + (x.jp / baseAll * 100).toFixed(1) + '%"></i><i class="kr" style="width:' + (x.kr / baseAll * 100).toFixed(1) + '%"></i></div><span class="cmp-val">' + fmt(tot) + '個' + red + '</span></div>';
+    }).join('');
+    // 結果発表では、各ステップで両チームが実際に何をしたかを公開する
+    const reveal = [1, 2, 3].map(function (n) {
+      return '<div style="margin-top:10px"><p class="note" style="margin-bottom:4px"><b>STEP ' + n + '</b></p>' + actionTags(buildInput(n), true) + '</div>';
+    }).join('') + '<div style="margin-top:10px"><p class="note" style="margin-bottom:4px"><b>STEP 4</b></p>' + actionTags(input, true) + '</div>';
+    return '<section class="res"><p class="kicker">STEP 5</p><h2>結果発表</h2>' +
+      (r.fallback ? '<p class="warn">外部シミュレーションにつながらなかったため、ダミー計算で実行しました。</p>' : '') +
+      '<div class="insight"><p>何もしないときより、浜に残るごみが<b>' + pct(r.improvement) + '%</b>減りました。</p>' + capNote(r) +
+      '<p>それでも<b>' + fmt(t.remaining.all) + '個</b>が残っています。そのうち外の海から来たごみは<b>' + fmt(t.byOrigin.jp.ext + t.byOrigin.kr.ext) + '個</b>。海は、もっと広い地域ともつながっています。</p></div>' +
+      '<div class="tiles">' + tile('漂着ごみ量', fmt(t.arrived.all)) + tile('回収量', fmt(t.collected.all)) +
+      tile('発生源削減量', fmt(r.sourceReduction.all), '個', 'good') + tile('協力による追加効果', fmt(r.bonusEffect.all), '個', 'good') + tile('残ったごみ', fmt(t.remaining.all)) + '</div>' +
+      '<section class="panel cmp"><h3>ステップごとの「残ったごみ」（何もしないときを100%）</h3>' + cmp +
+      '<p class="legend"><span><i class="dot jp"></i>対馬の浜</span><span><i class="dot kr"></i>韓国の海岸</span></p></section>' +
+      '<div class="charts" style="margin-top:16px">' + chartBox('jp', r) + chartBox('kr', r) + '</div>' +
+      '<section class="panel origin"><h3>ごみの出どころ（STEP4）</h3>' + originBar('jp', t.byOrigin.jp) + originBar('kr', t.byOrigin.kr) + '</section>' +
+      '<section class="panel" style="margin-top:16px"><h3 style="font-size:1rem;margin-bottom:2px">実施した対策（両チームぶんを公開）</h3>' + reveal +
+      '<p style="margin-top:12px"><b>協力による追加効果：</b>韓国側の対策で対馬に届くごみが<b>' + fmt(r.crossEffect.toJP) + '個</b>、日本側の対策で韓国の海岸に届くごみが<b>' + fmt(r.crossEffect.toKR) + '個</b>減りました。情報共有とひとつの海ボーナスで、さらに<b>' + fmt(r.bonusEffect.all) + '個</b>ぶん減っています。</p></section>' +
+      '<div class="row next"><button class="btn big" data-act="reflect" data-fk="reflect">ふりかえりへ</button></div></section>';
+  }
+
+  /* ---------- 画面: ふりかえり ---------- */
+  function viewReflect() {
+    const r1 = resultFor(1), r2 = resultFor(2), r4 = resultFor(4);
+    const baseJp = r4.baseline.byOrigin.jp;
+    const goals = [
+      { t: '海のごみは、海でつながっている',
+        d: '何もしないとき、対馬の浜に届くごみの<b>' + pct(baseJp.kr / (baseJp.jp + baseJp.kr + baseJp.ext)) + '%</b>は韓国から来ています。' },
+      { t: '拾うだけでは、解決できない',
+        d: 'STEP1では<b>' + fmt(r1.total.collected.all) + '個</b>拾っても、<b>' + fmt(r1.total.arrived.all) + '個</b>が流れ着き、<b>' + fmt(r1.total.remaining.all) + '個</b>が残りました。' },
+      { t: '発生源対策が重要',
+        d: 'STEP2では、発生源対策で流れ着くごみが<b>' + fmt(r2.sourceReduction.all) + '個</b>減りました。' },
+      { t: '情報共有が効果的',
+        d: 'STEP4では、情報共有により残りごみがさらに<b>' + fmt(r4.bonusEffect.info) + '個</b>減りました。' },
+      { t: '国際協力でより大きな成果',
+        d: '残ったごみは、STEP1の<b>' + fmt(r1.total.remaining.all) + '個</b>からSTEP4の<b>' + fmt(r4.total.remaining.all) + '個</b>へ。' }
+    ];
+    const qs = [
+      ['q1', '1. いちばん効果があった対策は何？ それはなぜ？'],
+      ['q2', '2. 協力しなかったら、どうなっていたと思う？'],
+      ['q3', '3. 自分たちのまちや学校でできることは？ ほかの国や地域とも協力したいことは？']
+    ];
+    const notes = mine().notes;
+    return '<section class="res"><p class="kicker">ふりかえり</p><h2>海は、ひとつ。</h2>' +
+      '<section class="panel"><h3 style="font-size:1.05rem;margin-bottom:6px">ゲームで見つけたこと</h3>' +
+      goals.map(function (g, i) { return '<div class="goal"><span class="no">' + (i + 1) + '</span><div><h4>' + g.t + '</h4><p>' + g.d + '</p></div></div>'; }).join('') + '</section>' +
+      '<section class="panel" style="margin-top:16px"><h3 style="font-size:1.05rem">話し合ってみよう</h3>' +
+      qs.map(function (q) { return '<div class="q"><label for="' + q[0] + '">' + q[1] + '</label><textarea id="' + q[0] + '" data-note="' + q[0] + '">' + esc(notes[q[0]] || '') + '</textarea></div>'; }).join('') +
+      '<p class="note" style="margin-top:8px">書いた内容は、自分のチームの記録として保存されます（相手チームには見えません）。</p></section>' +
+      '<div class="row next"><button class="btn big" data-act="leave" data-fk="leave2">新しいゲームをはじめる</button></div></section>';
+  }
+
+  /* ---------- 描画 ---------- */
+  function render() {
+    const active = document.activeElement, fk = active && active.dataset ? active.dataset.fk : null;
+    const v = curView(); curViewName = v;
+    $('#stepbar').innerHTML = (G && docs[G.team] ? viewSeatbar() + viewStepbar(v) : '') + (netError ? '<p class="warn" role="alert">' + esc(netError) + '</p>' : '');
+    const views = { lobby: viewLobby, intro: viewIntro, plan: viewPlan, sim: viewSim, result: viewResult, final: viewFinal, reflect: viewReflect };
+    const scr = $('#screen');
+    scr.innerHTML = views[v]();
+    const key = v + ':' + (G && docs[G.team] ? docs[G.team].step + G.team : '');
+    if (key !== lastKey) { window.scrollTo(0, 0); lastKey = key; }
+    $('#foot').textContent = (v === 'result' || v === 'final') ? '計算エンジン：' + (resultFor(step()).engine === 'dummy' ? 'ダミーシミュレーション（数値は学習用の仮のものです）' : resultFor(step()).engine) : '';
+    if (v === 'sim') startSim();
+    else if (fk) { const el = scr.querySelector('[data-fk="' + fk + '"]') || $('#stepbar').querySelector('[data-fk="' + fk + '"]'); if (el && !el.disabled) el.focus({ preventScroll: true }); }
+  }
+  // 相手の操作で届いた更新: 入力中やシミュレーション中は、画面を作りなおさない
+  function renderRemote() {
+    if (!G) return;
+    const a = document.activeElement;
+    if (curViewName === 'sim' && curView() === 'sim') return;
+    if (a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT')) return;
+    render();
+  }
+
+  function startSim() {
+    const st = step(), token = ++simToken, input = buildInput(st);
+    S.execute(input).then(function (res) {
+      if (token !== simToken || curView() !== 'sim') return;
+      resCache[st] = res;
+      animateSim(res, function () {
+        if (token !== simToken) return;
+        const next = st === 4 ? 'final' : 'result';
+        if (G.mode === 'local') { docs.jp.phase = next; docs.kr.phase = next; } else { mine().phase = next; persist(); }
+        render();
+      });
+    });
+  }
+
+  /* ---------- 操作（イベントは画面全体で1か所に集約） ---------- */
+  function changeAlloc(key, d) {
+    const parts = key.split(':'), m = M[parts[1]], uni = step() === 4;
+    const alloc = uni ? boards[4].alloc : myPlan().alloc;
+    const cur = alloc[key] || 0, next = cur + d;
+    if (next < 0 || next > m.max) return;
+    if (d > 0 && left() <= 0) return;
+    if (!uni && L[parts[0]].team !== G.team) return;
+    alloc[key] = next;
+    if (uni) persistBoard(4); else { unreadyMine(); persist(); }
+  }
+  const actions = {
+    newcode: function () { lobby.code = Math.random().toString(36).replace(/[^a-z0-9]/g, '').slice(0, 4).toUpperCase().padEnd(4, 'A'); },
+    join: function (el) { join(el.dataset.team, false); },
+    takeover: function (el) { join(el.dataset.team, true); },
+    'cancel-taken': function () { lobby.taken = ''; },
+    resume: function () { const s = loadSession(); if (s) { lobby.code = s.code; join(s.team, false); } },
+    practice: function () { startLocal(); },
+    leave: function () { leave(false); },
+    switch: function () { G.team = other(G.team); },
+    begin: function () { mine().phase = 'plan'; myPlan(); persist(); },
+    inc: function (el) { changeAlloc(el.dataset.key, 1); },
+    dec: function (el) { changeAlloc(el.dataset.key, -1); },
+    share: function (el) {
+      const k = el.dataset.kind;
+      if (step() === 4) {
+        const s = boards[4].shares;
+        if (s[k]) s[k] = false; else if (left() >= C.SHARE_COST) s[k] = true; else return;
+        persistBoard(4);
+      } else {
+        const s = myPlan().shares;
+        if (s[k]) s[k] = false; else if (left() >= C.SHARE_COST) s[k] = true; else return;
+        unreadyMine(); persist();
+      }
+    },
+    'coop-toggle': function () {
+      const c = boards[3].coop;
+      if (c.on) c.on = false; else if (left() >= coopPay(G.team)) c.on = true; else return;
+      persistBoard(3);
+    },
+    'coop-loc': function (el) {
+      const c = boards[3].coop; c.loc = el.dataset.loc;
+      if (M[c.method].kind !== L[c.loc].kind) c.method = L[c.loc].kind === 'coast' ? 'pickup' : 'river';
+      persistBoard(3);
+    },
+    'coop-method': function (el) { boards[3].coop.method = el.dataset.method; persistBoard(3); },
+    'coop-pay': function (el) {
+      const c = boards[3].coop, d = Number(el.dataset.d), next = c.jpPay + d;
+      if (next < 1 || next > C.COOP_COST - 1) return;
+      // 自分のチームの負担がふえるときは、ポイントが足りるか確かめる
+      if (c.on) {
+        const myInc = G.team === 'jp' ? d : -d;
+        if (myInc > 0 && left() < myInc) return;
+      }
+      c.jpPay = next; persistBoard(3);
+    },
+    ready: function () {
+      const st = step(), p = myPlan();
+      if (isReady(G.team, st)) { if (isReady(other(G.team), st)) return; p.ready = false; p.readyRev = ''; }
+      else { if (left() < 0) return; p.ready = true; p.readyRev = boardRev(st); }
+      persist();
+    },
+    skip: function () { if (simCancel) simCancel(); },
+    next: function () { const m = mine(); m.step = Math.min(4, m.step + 1); m.phase = 'intro'; persist(); },
+    reflect: function () { mine().phase = 'reflect'; persist(); }
+  };
+  document.addEventListener('click', function (e) {
+    const el = e.target.closest('[data-act]');
+    if (!el || el.disabled) return;
+    const fn = actions[el.dataset.act];
+    if (fn) { fn(el); render(); }
+  });
+  document.addEventListener('input', function (e) {
+    const t = e.target;
+    if (t.id === 'room') { lobby.code = t.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); if (t.value !== lobby.code) t.value = lobby.code; return; }
+    const k = t.dataset && t.dataset.note;
+    if (k && G && mine()) { mine().notes[k] = t.value; persist(); }   // 文字入力では画面を作りなおさない
+  });
+
+  // 後から外部シミュレーションを試すときのために、コンソールからも触れるようにしておく
+  window.MarineSim = S;
+  const sess0 = loadSession();
+  if (sess0) lobby.code = sess0.code;
+  render();
+})();
+</script>
+
+</html>
+
+</body></html>
